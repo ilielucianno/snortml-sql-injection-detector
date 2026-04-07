@@ -72,7 +72,6 @@ On the test set (3200 samples):
 
 ### Run data generation and training
 
-```bash
 # Generate the dataset
 python3 generate_improved_dataset.py
 
