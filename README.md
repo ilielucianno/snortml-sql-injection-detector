@@ -1,37 +1,47 @@
 # SnortML SQL Injection Detector
 
-A project where I trained a Machine Learning model (TensorFlow) to detect SQL injection attacks, as an open-source alternative to premium security solutions.
+![Dashboard](screenshots/dashboard.png)
 
-## Why I built this
+A real-time SQL injection detection system using Machine Learning (TensorFlow) integrated with network traffic capture, as an open-source alternative to premium security solutions like Zenarmor.
 
-I wanted to see if I could replace Zenarmor Premium (which costs money) with my own AI-based solution using Snort 3 and TensorFlow. The goal was to learn how zero-day detection works and have a real project in my portfolio.
+## Architecture
+Attacker (HTTP Request)
+↓
+Network Interface (enp0s3)
+↓ Scapy captures packets
+snort_bridge.py
+↓ extracts HTTP parameters
+ml_service.py (Flask :5000)
+↓ TensorFlow analyzes
+BLOCK / ALLOW
+↓ sends result
+dashboard.py (Flask :8080)
+↓ displays in real-time
+Browser Dashboard
 
 ## What I achieved
 
-- Trained model with **100% accuracy** on 16,000 samples
-- Complete scripts for data generation and training
-- Model exported in `.h5` format (ready for Snort 3)
-- Full documentation of the process
+- ✅ TensorFlow model trained on 16,000 samples (100% accuracy)
+- ✅ Real-time network traffic capture with Scapy
+- ✅ Detection of classic SQL injection attacks
+- ✅ Detection of URL-encoded obfuscated attacks
+- ✅ Detection of UNION, time-based, stacked query attacks
+- ✅ Live web dashboard showing attacks in real-time
+- ✅ Full integration with Snort 3
 
-## How I did it
+## Why I built this
 
-### 1. Generated the dataset
+I wanted to replace Zenarmor Premium with my own AI-based solution using Snort 3 and TensorFlow. The goal was to learn how zero-day detection works and have a real project in my portfolio.
 
-I created two categories of HTTP traffic:
-- **Normal** (8000 samples) - legitimate requests (e.g., `id=123`, `q=laptop`)
-- **SQL injection attacks** (8000 samples) - various techniques (tautology, union, stacked queries, time-based)
+## How it works
 
-I extracted 15 features from each request:
-- parameter length
-- number of special characters
-- number of `&` characters (multiple parameters)
-- number of digits
-- presence of SQL keywords (`'`, `or`, `and`, `select`, `union`, `drop`, `--`, `;`, `=`, `sleep`, `benchmark`)
+### 1. Dataset Generation (`generate_improved_dataset.py`)
+- 8,000 normal HTTP requests
+- 8,000 SQL injection attacks (tautology, union, stacked, time-based, boolean)
+- 15 features extracted per request
 
-### 2. Trained the model
-
-I used a neural network with the following architecture:
-
+### 2. Model Training (`train_improved_model_v2.py`)
+Neural network architecture:
 - Input layer (15 features)
 - Dense 64 + BatchNorm + Dropout 0.3
 - Dense 32 + BatchNorm + Dropout 0.2
@@ -39,59 +49,104 @@ I used a neural network with the following architecture:
 - Dense 8
 - Output (sigmoid)
 
-Settings used:
-- Optimizer: Adam (learning_rate=0.0005)
-- Loss: binary_crossentropy
-- EarlyStopping (patience 15 epochs)
-- ReduceLROnPlateau to adjust learning rate
+### 3. ML Service (`ml_service.py`)
+Flask API that:
+- Loads the trained model
+- Receives HTTP parameters
+- Returns BLOCK/ALLOW verdict with confidence score
+- Handles URL-encoded attacks automatically
 
-### 3. Results
+### 4. Snort Bridge (`snort_bridge.py`)
+- Captures live network traffic using Scapy
+- Extracts HTTP GET/POST parameters
+- Sends to ML Service for analysis
+- Logs all detections
 
-On the test set (3200 samples):
+### 5. Dashboard (`dashboard.py`)
+- Real-time web interface
+- Shows all requests and attacks
+- Confidence score visualization
+- Auto-updates every 2 seconds
+
+## Attack Types Detected
+
+| Attack Type | Example | Detected |
+|-------------|---------|----------|
+| Tautology | `1' OR '1'='1` | ✅ |
+| UNION | `1 UNION SELECT * FROM users` | ✅ |
+| Time-based | `1' AND SLEEP(5)--` | ✅ |
+| Stacked queries | `1; DROP TABLE users--` | ✅ |
+| URL encoded | `1%27%20OR%20%271%27%3D%271` | ✅ |
+| Comment bypass | `admin'--` | ✅ |
+
+## Installation
+
+### Requirements
+bash
+pip install tensorflow flask numpy scapy requests
+
+
+### Setup
+bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/snortml-sql-injection-detector
+cd snortml-sql-injection-detector
+
+# Create virtual environment
+python3 -m venv snortml_env
+source snortml_env/bin/activate
+
+# Install dependencies
+pip install tensorflow flask numpy scapy requests
+
+# Generate dataset
+python3 generate_improved_dataset.py
+
+# Train model
+python3 train_improved_model_v2.py
+
+
+### Running the system
+
+# Terminal 1 - ML Service
+python3 ml_service.py
+
+# Terminal 2 - Dashboard
+python3 dashboard.py
+
+# Terminal 3 - Bridge (requires sudo for packet capture)
+sudo python3 snort_bridge.py
+
+# Open dashboard in browser
+http://YOUR_IP:8080
+``
+
+## Results
+
+On test set (3,200 samples):
 - **Accuracy: 100%**
 - **Precision: 100%**
 - **Recall: 100%**
 
-### 4. Problems encountered and solutions
+## Tech Stack
 
-| Problem | Solution |
-|---------|----------|
-| Initially, the model didn't detect attacks well | Added more attack types to the training set |
-| A false positive appeared for `product=laptop&page=2` | Added normal requests with `&` and longer length to the training set |
-| Installing TensorFlow on Ubuntu 24.04 | Used a virtual environment (`python3 -m venv`) |
-| Snort 3 didn't have ML support compiled | Recompiled Snort with `--enable-ml` (separate process) |
+- **Python 3.12**
+- **TensorFlow 2.21** — ML model
+- **Flask** — REST API & Dashboard
+- **Scapy** — Network packet capture
+- **Snort 3.12** — IDS integration
 
 ## What I learned
 
-1. **Machine Learning for security is not magic** - it needs quality data and careful feature engineering
-2. **The dataset is key** - the more attack variants you add, the more robust the model becomes
-3. **False positives are the biggest challenge** - I spent a lot of time eliminating them
-4. **Integration with Snort 3 is possible but complex** - requires special compilation
+1. ML for security needs quality data and careful feature engineering
+2. 100% accuracy on synthetic data doesn't mean robust against real attacks
+3. URL decoding before analysis is critical for catching obfuscated attacks
+4. False positives are the biggest challenge in production IDS systems
+5. Integration with Snort 3 requires careful network architecture planning
 
-## How to use this project
+## Author
 
-### Run data generation and training
-
-# Generate the dataset
-python3 generate_improved_dataset.py
-
-# Train the model
-python3 train_improved_model_v2.py
-Use the model with Snort 3
-Copy snort_model_improved.h5 to /usr/local/lib/
-
-Compile Snort 3 with --enable-ml
-
-Configure Snort to use the model
-
-Requirements
-bash
-pip install tensorflow numpy scapy
-Conclusion
-This project demonstrates that you can build an SQL injection detection system using Machine Learning with minimal resources (laptop, VM, open-source software). The results are promising (100% accuracy in testing), and the model can be integrated into Snort 3 for real-time protection.
-
-Author
-Ilie Lucian
-Technical Department Manager | Learning cybersecurity through hands-on projects
+**Ilie Lucian**  
+Technical Department Manager | Learning cybersecurity through hands-on projects  
 
 Project completed in April 2026 as part of my cybersecurity learning journey.
