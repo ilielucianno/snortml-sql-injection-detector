@@ -1,6 +1,6 @@
 # SnortML SQL Injection Detector
 
-![Dashboard](screenshots/dashboard.png)
+![Dashboard](dashboard_screenshot.png)
 
 A real-time SQL injection detection system using Machine Learning (TensorFlow) integrated with network traffic capture, as an open-source alternative to premium security solutions like Zenarmor.
 
