@@ -1,0 +1,5 @@
+tensorflow>=2.21.0
+flask>=3.0.0
+numpy>=1.26.0
+scapy>=2.5.0
+requests>=2.31.0
