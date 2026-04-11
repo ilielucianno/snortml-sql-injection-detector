@@ -5,19 +5,8 @@
 A real-time SQL injection detection system using Machine Learning (TensorFlow) integrated with network traffic capture, as an open-source alternative to premium security solutions like Zenarmor.
 
 ## Architecture
-Attacker (HTTP Request)
-↓
-Network Interface (enp0s3)
-↓ Scapy captures packets
-snort_bridge.py
-↓ extracts HTTP parameters
-ml_service.py (Flask :5000)
-↓ TensorFlow analyzes
-BLOCK / ALLOW
-↓ sends result
-dashboard.py (Flask :8080)
-↓ displays in real-time
-Browser Dashboard
+
+Attacker → Network Interface (enp0s3) → snort_bridge.py → ml_service.py (Flask :5000) → BLOCK/ALLOW → dashboard.py (Flask :8080) → Browser Dashboard
 
 ## What I achieved
 
@@ -35,12 +24,12 @@ I wanted to replace Zenarmor Premium with my own AI-based solution using Snort 3
 
 ## How it works
 
-### 1. Dataset Generation (`generate_improved_dataset.py`)
+### 1. Dataset Generation (generate_improved_dataset.py)
 - 8,000 normal HTTP requests
 - 8,000 SQL injection attacks (tautology, union, stacked, time-based, boolean)
 - 15 features extracted per request
 
-### 2. Model Training (`train_improved_model_v2.py`)
+### 2. Model Training (train_improved_model_v2.py)
 Neural network architecture:
 - Input layer (15 features)
 - Dense 64 + BatchNorm + Dropout 0.3
@@ -49,20 +38,20 @@ Neural network architecture:
 - Dense 8
 - Output (sigmoid)
 
-### 3. ML Service (`ml_service.py`)
+### 3. ML Service (ml_service.py)
 Flask API that:
 - Loads the trained model
 - Receives HTTP parameters
 - Returns BLOCK/ALLOW verdict with confidence score
 - Handles URL-encoded attacks automatically
 
-### 4. Snort Bridge (`snort_bridge.py`)
+### 4. Snort Bridge (snort_bridge.py)
 - Captures live network traffic using Scapy
 - Extracts HTTP GET/POST parameters
 - Sends to ML Service for analysis
 - Logs all detections
 
-### 5. Dashboard (`dashboard.py`)
+### 5. Dashboard (dashboard.py)
 - Real-time web interface
 - Shows all requests and attacks
 - Confidence score visualization
@@ -72,54 +61,41 @@ Flask API that:
 
 | Attack Type | Example | Detected |
 |-------------|---------|----------|
-| Tautology | `1' OR '1'='1` | ✅ |
-| UNION | `1 UNION SELECT * FROM users` | ✅ |
-| Time-based | `1' AND SLEEP(5)--` | ✅ |
-| Stacked queries | `1; DROP TABLE users--` | ✅ |
-| URL encoded | `1%27%20OR%20%271%27%3D%271` | ✅ |
-| Comment bypass | `admin'--` | ✅ |
+| Tautology | 1' OR '1'='1 | ✅ |
+| UNION | 1 UNION SELECT * FROM users | ✅ |
+| Time-based | 1' AND SLEEP(5)-- | ✅ |
+| Stacked queries | 1; DROP TABLE users-- | ✅ |
+| URL encoded | 1%27%20OR%20%271%27%3D%271 | ✅ |
+| Comment bypass | admin'-- | ✅ |
 
 ## Installation
 
-### Requirements
-bash
-pip install tensorflow flask numpy scapy requests
+Run the following command to install dependencies:
 
+    pip install tensorflow flask numpy scapy requests
 
 ### Setup
-bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/snortml-sql-injection-detector
-cd snortml-sql-injection-detector
 
-# Create virtual environment
-python3 -m venv snortml_env
-source snortml_env/bin/activate
-
-# Install dependencies
-pip install tensorflow flask numpy scapy requests
-
-# Generate dataset
-python3 generate_improved_dataset.py
-
-# Train model
-python3 train_improved_model_v2.py
-
+    git clone https://github.com/YOUR_USERNAME/snortml-sql-injection-detector
+    cd snortml-sql-injection-detector
+    python3 -m venv snortml_env
+    source snortml_env/bin/activate
+    pip install tensorflow flask numpy scapy requests
+    python3 generate_improved_dataset.py
+    python3 train_improved_model_v2.py
 
 ### Running the system
 
-# Terminal 1 - ML Service
-python3 ml_service.py
+    # Terminal 1 - ML Service
+    python3 ml_service.py
 
-# Terminal 2 - Dashboard
-python3 dashboard.py
+    # Terminal 2 - Dashboard
+    python3 dashboard.py
 
-# Terminal 3 - Bridge (requires sudo for packet capture)
-sudo python3 snort_bridge.py
+    # Terminal 3 - Bridge (requires sudo for packet capture)
+    sudo python3 snort_bridge.py
 
-# Open dashboard in browser
-http://YOUR_IP:8080
-``
+Open dashboard in browser: http://YOUR_IP:8080
 
 ## Results
 
@@ -146,7 +122,7 @@ On test set (3,200 samples):
 
 ## Author
 
-**Ilie Lucian**  
-Technical Department Manager | Learning cybersecurity through hands-on projects  
+**Ilie Lucian**
+Technical Department Manager | Learning cybersecurity through hands-on projects
 
 Project completed in April 2026 as part of my cybersecurity learning journey.
